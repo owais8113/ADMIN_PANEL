@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import './style.css';
-import { Link, useHistory, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fs, auth, storage } from '../Config'; // Update the path to your config.js file
+
 const SignupPage = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -10,62 +11,76 @@ const SignupPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMatchError, setPasswordMatchError] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [securityKey, setSecurityKey] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  
-  // const history = useHistory();
+
   const navigate = useNavigate();
 
-const handleImageUpload = (event) => {
-const file = event.target.files[0];
-setSelectedImage(file);
-};
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    setSelectedImage(file);
+  };
 
-const handleSignup = async (e) => {
-e.preventDefault();
+  const generateSecurityKey = () => {
+    // Generate a random 10-letter security key
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_';
+    let result = '';
+    for (let i = 0; i < 10; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  };
 
-if (password !== confirmPassword) {
-  setPasswordMatchError(true);
-  return;
-}
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
-try {
-  // Create a new admin user in Firebase Auth
-  const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-  const user = userCredential.user;
+    if (password !== confirmPassword) {
+      setPasswordMatchError(true);
+      return;
+    }
 
-  // Upload the selected image to Firebase Storage
-  const imageRef = storage.ref().child(`admin/${user.uid}`);
-  await imageRef.put(selectedImage);
+    try {
+      // Create a new admin user in Firebase Auth
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
 
-  // Get the download URL of the uploaded image
-  const imageUrl = await imageRef.getDownloadURL();
+      // Upload the selected image to Firebase Storage
+      const imageRef = storage.ref().child(`admin/${user.uid}`);
+      await imageRef.put(selectedImage);
 
-  // Store the admin details in the "admin" collection in Firestore
-  await fs.collection('admin').doc(user.uid).set({
-    name,
-    email,
-    phone,
-    imageUrl,
-  });
+      // Get the download URL of the uploaded image
+      const imageUrl = await imageRef.getDownloadURL();
 
-  // Clear the form and state values
-  setName('');
-  setEmail('');
-  setPhone('');
-  setPassword('');
-  setConfirmPassword('');
-  setSelectedImage(null);
-  setPasswordMatchError(false);
-  setSuccessMessage('Signup successful!');
+      // Generate the security key
+      const newSecurityKey = generateSecurityKey();
 
-  // Redirect to the login page
-  navigate('/');
-} catch (error) {
-  console.error('Error signing up:', error);
-  setErrorMessage('Signup failed. Please try again.');
-}
+      // Store the admin details in the "admin" collection in Firestore
+      await fs.collection('admin').doc(user.uid).set({
+        name,
+        email,
+        phone,
+        imageUrl,
+        securityKey: newSecurityKey,
+      });
 
+      // Clear the form and state values
+      setName('');
+      setEmail('');
+      setPhone('');
+      setPassword('');
+      setConfirmPassword('');
+      setSelectedImage(null);
+      setPasswordMatchError(false);
+      setSecurityKey(newSecurityKey); // Set the generated security key in the state
+      setSuccessMessage('Signup successful!');
+
+      // Redirect to the login page
+      navigate('/signin');
+    } catch (error) {
+      console.error('Error signing up:', error);
+      setErrorMessage('Signup failed. Please try again.');
+    }
   };
 
   return (
@@ -128,7 +143,7 @@ try {
       Sign Up
     </button>
     <p className="login-text">
-      New User?{' '}
+      Already a User?{' '}
       <Link to="/" className="signup-link">
         Login
       </Link>{' '}
