@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import './style.css';
 import { Link, useHistory, useNavigate } from 'react-router-dom';
-import { auth } from '../Config'; // Update the path to your config.js file
+import { auth,fs } from '../Config'; // Update the path to your config.js file
 
 const Signin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [securityKey, setSecurityKey] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
@@ -16,17 +17,26 @@ const Signin = () => {
       // Sign in with Firebase Auth
       await auth.signInWithEmailAndPassword(email, password);
 
-      // Clear the form and state values
-      setEmail('');
-      setPassword('');
-      setErrorMessage('');
+      // Get the current user's document from Firestore
+      const user = await fs.collection('admin').doc(auth.currentUser.uid).get();
 
-      // Redirect to the desired page after successful login
-      // Replace "/dashboard" with the appropriate route for your admin panel
-      navigate('/home');
+      // Check if the security key matches
+      if (user.exists && user.data().securityKey === securityKey) {
+        // Clear the form and state values
+        setEmail('');
+        setPassword('');
+        setSecurityKey('');
+        setErrorMessage('');
+
+        // Redirect to the desired page after successful login
+        // Replace "/dashboard" with the appropriate route for your admin panel
+        navigate('/home');
+      } else {
+        setErrorMessage('Invalid email, password, or security key');
+      }
     } catch (error) {
       console.error('Error logging in:', error);
-      setErrorMessage('Invalid email or password');
+      setErrorMessage('Invalid email, password, or security key');
     }
   };
 
@@ -48,6 +58,14 @@ const Signin = () => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          className="input-field"
+          required
+        />
+        <input
+          type="password"
+          placeholder="Security Key"
+          value={securityKey}
+          onChange={(e) => setSecurityKey(e.target.value)}
           className="input-field"
           required
         />
