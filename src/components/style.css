@@ -1282,3 +1282,23 @@ textarea {
 .phaltu-container{
   background-color: #12171f;
 }
+
+.security-container {
+  width: 300px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: opacity 0.3s ease-in-out; /* Animation for fade-in effect */
+}
+
+.authorized-container {
+  opacity: 0; /* Initially hidden */
+  transition: opacity 0.5s ease-in-out; /* Animation for fade-in effect */
+}
+
+.authorized-container.show {
+  opacity: 1; /* Show the container when authorized */
+}
